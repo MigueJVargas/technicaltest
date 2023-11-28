@@ -15,27 +15,30 @@
         // Obtener el contexto del lienzo
         var ctx = document.getElementById('myChart').getContext('2d');
 
-        // Datos de ejemplo (reemplaza esto con tus datos de la base de datos)
-        var datos = {
-            labels: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo'],
-            datasets: [{
-                label: 'Datos en el Tiempo',
-                backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                borderColor: 'rgba(75, 192, 192, 1)',
-                borderWidth: 1,
-                data: [10, 30, 15, 25, 20] // Reemplaza esto con tus datos reales
-            }]
-        };
+        // Función para obtener datos desde PHP (usando fetch)
+        function obtenerDatos() {
+            return fetch('datos.php')
+                .then(response => response.json())
+                .then(data => {
+                    return {
+                        labels: data.map(entry => entry.price), // Eje X: Precio
+                        datasets: [{
+                            label: 'Cripto',
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1,
+                            data: data.map(entry => entry.updated) // Eje Y: Actualizado
+                        }]
+                    };
+                });
+        }
 
         // Configuración del gráfico
         var opciones = {
             scales: {
                 x: [{
-                    type: 'time',
-                    time: {
-                        unit: 'month'
-                    },
-                    distribution: 'series'
+                    type: 'linear', // Usar escala lineal para el eje X (precio)
+                    position: 'bottom'
                 }],
                 y: [{
                     ticks: {
@@ -45,12 +48,16 @@
             }
         };
 
-        // Crear el gráfico
-        var myChart = new Chart(ctx, {
-            type: 'line',
-            data: datos,
-            options: opciones
+        // Crear el gráfico después de obtener los datos
+        obtenerDatos().then(datos => {
+            var myChart = new Chart(ctx, {
+                type: 'scatter', // Usar gráfico de dispersión para mostrar los puntos
+                data: datos,
+                options: opciones
+            });
         });
     </script>
 </body>
+</html>
+
 </html>
