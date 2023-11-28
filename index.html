@@ -51,7 +51,7 @@
         // Crear el gráfico después de obtener los datos
         obtenerDatos().then(datos => {
             var myChart = new Chart(ctx, {
-                type: 'scatter', // Usar gráfico de dispersión para mostrar los puntos
+                type: 'line', // Usar gráfico de dispersión para mostrar los puntos
                 data: datos,
                 options: opciones
             });
