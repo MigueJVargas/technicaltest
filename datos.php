@@ -12,8 +12,8 @@ if ($conexion->connect_error) {
     die("Error de conexión a la base de datos: " . $conexion->connect_error);
 }
 
-// Consulta SQL para obtener el último registro de la tabla
-$sql = "SELECT latitude, longitude, time_stamp FROM ubication ORDER BY time_stamp DESC LIMIT 30";
+// Consulta SQL para obtener los registros de la tabla
+$sql = "SELECT cripto, price, datetime FROM criptoinfo ;
 
 $resultado = $conexion->query($sql);
 
@@ -22,9 +22,9 @@ if ($resultado->num_rows > 0) {
     
     // Convertir los datos en un arreglo asociativo
     $datos = array(
-        "latitude" => $fila["latitude"],
-        "longitude" => $fila["longitude"],
-        "time_stamp" => $fila["time_stamp"]
+        "cripto" => $fila["cripto"],
+        "price" => $fila["price"],
+        "updated" => $fila["datetime"]
     );
     echo json_encode($datos);
 } else {
