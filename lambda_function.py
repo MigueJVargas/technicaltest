@@ -1,15 +1,14 @@
-from request import Request, Session
+import requests
+import pymysql
+import os
 import sys
 import logging
-import json
-import os
-import subprocess
-import pymysql
 
 user_name = os.environ['USER_NAME']
 password = os.environ['PASSWORD']
 rds_proxy_host = os.environ['RDS_PROXY_HOST']
 db_name = os.environ['DB_NAME']
+api_key = os.environ['api_key']  # Asegúrate de usar el nombre correcto de la variable de entorno
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -23,17 +22,16 @@ except pymysql.MySQLError as e:
 
 logger.info("SUCCESS: Connection to RDS for MySQL instance succeeded")
 
-def lambda_handler(api_key):
-     
-    "This function creates a new RDS database table "
-    url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest"
+def lambda_handler(event, context):
+    # URL de la API de CoinMarketCap para obtener información de las criptomonedas
+    url = "https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest"
 
     # Parámetros de la solicitud
-    parametros = {
-        'start':'1',
-        'limit':'2',
-        'convert':'USD',  # Convertir los precios a dólares estadounidenses
-        'symbol':'BTC,ETH'  # Símbolos de las criptomonedas (Bitcoin y Ethereum)
+    parameters = {
+        'start': '1',
+        'limit': '2',
+        'convert': 'USD',
+        'symbol': 'BTC,ETH'
     }
 
     # Cabeceras de la solicitud con la clave de API
@@ -41,28 +39,54 @@ def lambda_handler(api_key):
         'Accepts': 'application/json',
         'X-CMC_PRO_API_KEY': api_key,
     }
-    
 
-    item_count = 0
-    
-    message = json.dumps(event['data']['1']['quote']['USD'])
-    data = json.loads(message)
-    Value = data['price']
-    datetime = data['last_updated']
-    cripto = 'BTC'
-    
-    sql_string = f"insert into criptoinfo (cripto, Value, datetime) values('{cripto}', '{Value}','{datetime}')"
+    # Configurar una sesión de requests
+    with requests.Session() as session:
+        # Configurar la clave de API como un encabezado en la sesión
+        session.headers.update(headers)
+        
+        try:
+            logging.info("Realizando la solicitud a la API...")
+            # Realizar la solicitud a la API usando session.get en lugar de requests.get
+            respuesta = session.get(url, params=parameters)
 
+            # Verificar si la solicitud a la API fue exitosa
+            if respuesta.status_code == 200:
+                datos = respuesta.json()
+                logging.info("Solicitud a la API exitosa!")
 
-    with conn.cursor() as cur:
-        cur.execute("create table if not exists criptoinfo ( id int  NOT NULL AUTO_INCREMENT , cripto varchar(5) NOT NULL, Value varchar(255) NOT NULL, datetime varchar(255), PRIMARY KEY (id))")
-        cur.execute(sql_string)
-        conn.commit()
-        cur.execute("select * from criptoinfo")
-        logger.info("The following items have been added to the database:")
-        for row in cur:
-            item_count += 1
-            logger.info(row)
-    conn.commit()
+                # Insertar información sobre las criptomonedas en la tabla de la base de datos
+                for cripto in datos['data']:
+                    nombre = cripto['name']
+                    simbolo = cripto['symbol']
+                    precio = cripto['quote']['USD']['price']
+                    ultima_actualizacion = cripto['last_updated']
 
-    return "Added %d items to RDS for MySQL table" %(item_count)
+                    # Consulta SQL para insertar datos en la tabla
+                    insert_query = "INSERT INTO criptoinfo (cripto, precio, datetime) VALUES (%s, %s, %s)"
+                    insert_values = (simbolo, precio, ultima_actualizacion)
+
+                    # Conectar a la base de datos RDS
+                    try:
+                        # Obtener el cursor
+                        with conn.cursor() as cursor:
+                            # Ejecutar la consulta
+                            cursor.execute(insert_query, insert_values)
+
+                        # Hacer commit de los cambios
+                        conn.commit()
+
+                        logging.info(f"Inserción en la base de datos exitosa para {nombre}")
+
+                    except pymysql.Error as err:
+                        logging.error(f"Error en la base de datos: {err}")
+
+            else:
+                logging.error(f"Error al hacer la solicitud a la API. Código de estado: {respuesta.status_code}")
+
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Error al hacer la solicitud a la API: {e}")
+
+        finally:
+            # Cerrar la conexión fuera del bucle for para evitar cerrarla en cada iteración
+            conn.close()
