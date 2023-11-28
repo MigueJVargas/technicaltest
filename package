@@ -1,2 +1,0 @@
-mkdir package
-pip install --target package pymysql
