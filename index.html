@@ -15,19 +15,51 @@
         // Obtener el contexto del lienzo
         var ctx = document.getElementById('myChart').getContext('2d');
 
-        // Función para obtener datos desde PHP (usando fetch)
+        // Función para obtener datos desde el servidor Node.js para ambas monedas
         function obtenerDatos() {
-            return fetch('datos.php')
-                .then(response => response.json())
+            // Obtener datos para Bitcoin
+            var bitcoinData = fetch('http://localhost:3000/datos/bitcoin')
+                .then(response => response.json());
+
+            // Obtener datos para Ethereum
+            var ethereumData = fetch('http://localhost:3000/datos/ethereum')
+                .then(response => response.json());
+
+            // Retornar una promesa que se resuelve cuando ambas solicitudes estén completas
+            return Promise.all([bitcoinData, ethereumData])
                 .then(data => {
+                    var bitcoinData = data[0];
+                    var ethereumData = data[1];
+
+                    const formatearFecha = (fecha) => {
+                    const fechaFormateada = new Date(fecha).toLocaleString();
+                    return fechaFormateada;
+                    };
+
+                // Formatear las fechas en ambos conjuntos de datos
+                    bitcoinData.forEach(entry => {
+                        entry.updated = formatearFecha(entry.updated);
+                    });
+
+                    ethereumData.forEach(entry => {
+                        entry.updated = formatearFecha(entry.updated);
+                    });
+
+
                     return {
-                        labels: data.map(entry => entry.price), // Eje X: Precio
+                        labels: bitcoinData.map(entry => entry.updated),
                         datasets: [{
-                            label: 'Cripto',
+                            label: 'Bitcoin',
                             backgroundColor: 'rgba(75, 192, 192, 0.2)',
                             borderColor: 'rgba(75, 192, 192, 1)',
                             borderWidth: 1,
-                            data: data.map(entry => entry.updated) // Eje Y: Actualizado
+                            data: bitcoinData.map(entry => entry.price)
+                        }, {
+                            label: 'Ethereum',
+                            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            borderWidth: 1,
+                            data: ethereumData.map(entry => entry.price)
                         }]
                     };
                 });
@@ -37,8 +69,10 @@
         var opciones = {
             scales: {
                 x: [{
-                    type: 'linear', // Usar escala lineal para el eje X (precio)
-                    position: 'bottom'
+                    type: 'time',
+                    time: {
+                        unit: 'days'
+                    },
                 }],
                 y: [{
                     ticks: {
@@ -51,13 +85,15 @@
         // Crear el gráfico después de obtener los datos
         obtenerDatos().then(datos => {
             var myChart = new Chart(ctx, {
-                type: 'line', // Usar gráfico de dispersión para mostrar los puntos
+                type: 'line',
                 data: datos,
                 options: opciones
             });
         });
     </script>
 </body>
+</html>
+
 </html>
 
 </html>
