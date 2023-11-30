@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gráfico de Datos en el Tiempo</title>
+    <!-- Incluir la biblioteca Chart.js desde CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- Crear un lienzo (canvas) para el gráfico -->
+    
+        <canvas id="myChart" ></canvas>
+    
+    <style>
+        *{
+            color: white;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #17141F;
+            
+        }
+      
+        canvas {
+            max-width: 100%;
+            height: auto;
+            min-width: 50%;
+            min-height: 70%;
+            
+        }
+    </style>
+
+    <script>
+        // Obtener el contexto del lienzo
+        var ctx = document.getElementById('myChart').getContext('2d');
+        function obtenerDireccionIP() {
+    // Obtener la dirección IP
+            var direccionIP = window.location.hostname;
+
+            return direccionIP;
+        }
+        // Función para obtener datos desde el servidor Node.js para ambas monedas
+        function obtenerDatos() {
+            // Obtener datos para Bitcoin
+            var direccionIP = obtenerDireccionIP();
+            console.log(direccionIP)
+            var bitcoinData = fetch('http://'+ direccionIP +':80/datos/bitcoin')
+                .then(response => response.json());
+
+            // Obtener datos para Ethereum
+            var ethereumData = fetch('http://'+ direccionIP +':80/datos/ethereum')
+                .then(response => response.json());
+
+            // Retornar una promesa que se resuelve cuando ambas solicitudes estén completas
+            return Promise.all([bitcoinData, ethereumData])
+                .then(data => {
+                    var bitcoinData = data[0];
+                    var ethereumData = data[1];
+
+                    const formatearFecha = (fecha) => {
+                    const fechaFormateada = new Date(fecha).toLocaleString();
+                    return fechaFormateada;
+                    };
+
+                // Formatear las fechas en ambos conjuntos de datos
+                    bitcoinData.forEach(entry => {
+                        entry.updated = formatearFecha(entry.updated);
+                    });
+
+                    ethereumData.forEach(entry => {
+                        entry.updated = formatearFecha(entry.updated);
+                    });
+
+
+                    return {
+                        labels: bitcoinData.map(entry => entry.updated),
+                        datasets: [{
+                            label: 'Bitcoin',
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1,
+                            data: bitcoinData.map(entry => entry.price),
+                            yAxisID: 'left-y-axis'
+                        }, {
+                            label: 'Ethereum',
+                            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            borderWidth: 1,
+                            data: ethereumData.map(entry => entry.price),
+                            yAxisID: 'right-y-axis'
+                        }]
+                    };
+                });
+        }
+
+        // Crear el gráfico después de obtener los datos
+        obtenerDatos().then(datos => {
+            var myChart = new Chart(ctx, {
+                type: 'line',
+                data: datos,
+                options: {
+                    plugins: {
+                        legend:{
+                            labels:{
+                                color: 'white',
+                            }
+                        }
+                    },
+                    scales: {
+                        'left-y-axis': {
+                            position: 'left',
+                            id: 'left-y-axis',
+                            title: {
+                                display: true,
+                                text: 'Bitcoin Price',
+                                color:'white'
+                            },
+                            ticks:{
+                                color: 'white',
+                            }
+                        },
+                        'right-y-axis': {
+                            position: 'right',
+                            id: 'right-y-axis',
+                            title: {
+                                display: true,
+                                text: 'Ethereum Price',
+                                color:'white'
+                            },
+                            ticks:{
+                                color: 'white',
+                            }
+                        },
+                        x: {
+                            ticks:{
+                                color: 'white'
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+
