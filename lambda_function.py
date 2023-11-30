@@ -8,7 +8,7 @@ user_name = os.environ['USER_NAME']
 password = os.environ['PASSWORD']
 rds_proxy_host = os.environ['RDS_PROXY_HOST']
 db_name = os.environ['DB_NAME']
-api_key = os.environ['api_key']  # Asegúrate de usar el nombre correcto de la variable de entorno
+api_key = os.environ['api_key']  
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -47,7 +47,7 @@ def lambda_handler(event, context):
         
         try:
             logging.info("Realizando la solicitud a la API...")
-            # Realizar la solicitud a la API usando session.get en lugar de requests.get
+            # Realizar la solicitud a la API 
             respuesta = session.get(url, params=parameters)
 
             # Verificar si la solicitud a la API fue exitosa
