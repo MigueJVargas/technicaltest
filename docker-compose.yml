@@ -1,0 +1,23 @@
+version: '3'
+services:
+  mysql:
+    image: mysql:latest
+    environment:
+      MYSQL_ROOT_PASSWORD: dbfortest.ccoiwjp63jon.us-east-2.rds.amazonaws.com
+      MYSQL_DATABASE: criptoinfo
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: Admin123
+    ports:
+      - "3306:3306"
+
+  nodejs:
+    build: .
+    ports:
+      - "80:80"
+    depends_on:
+      - mysql
+    environment:
+      DB_HOST: dbfortest.ccoiwjp63jon.us-east-2.rds.amazonaws.com
+      DB_USER: admin
+      DB_PASSWORD: Admin123
+      DB_NAME: criptoinfo
